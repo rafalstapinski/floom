@@ -1,3 +1,3 @@
 # floom
 
-Combines Soundcloud and Spotify into a single desktop player
+unified player for music found from TPB and Soundcloud
