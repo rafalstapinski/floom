@@ -1,5 +1,5 @@
 venv/
 *.pyc
 config.py
-spotify_appkey.key
 node_modules/
+*.db

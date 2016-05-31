@@ -2,6 +2,7 @@ import web
 import soundcloud
 import config
 import json
+import urllib2
 
 # import sqlalchemy
 # from sqlalchemy.ext.declarative import declarative_base
@@ -24,14 +25,33 @@ def new_request(request):
     web.header("Content-Type", "application/json")
     web.header("Access-Control-Allow-Origin", "*")
 
+def get_redirected_url(url):
+    opener = urllib2.build_opener(urllib2.HTTPRedirectHandler)
+    request = opener.open(url)
+    return request.url
+
 def sc_search_tracks(q):
 
 	result = []
 
-	tracks = sc_client.get("/tracks", q=q, limit=20, linked_partition=1)
+	tracks = sc_client.get("/tracks", q=q)
 
 	for track in tracks:
-		result.append({"title": track.title, "artist": track.user["username"]})
+
+		saved_track = session.query(SC_Track).filter(SC_Track.sc_id == track.id)
+
+		if saved_track is not None:
+			stream_url = saved_track.stream_url
+		else:
+			stream_url = get_redirected_url(track.stream_url + "?client_id=%s" % config.auth.sc_client_id)
+			session.add(SC_Track(sc_id=track.id, stream_url=stream_url))
+	        session.commit()
+
+		result.append({"title": track.title, "artist": track.user["username"], "artwork": track.artwork_url, "stream": stream_url})
+
+		# cache results here
+		# if result not in cache, then lookup redirected url
+		# takes hella long to get redirected url
 
 	return result
 
@@ -72,8 +92,7 @@ class search:
 			t = "track"
 
 		if t == "track":
-
-
+			return write(200, {"tracks": sc_search_tracks(q)})
 
 ################################################
 #
@@ -81,12 +100,13 @@ class search:
 #
 ################################################
 
-# class Track(base):
-#     __tablename__ = "tracks"
-#     id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
-#     title = sqlalchemy.Column(sqlalchemy.String)
-# 	album = sqlalchemy.Column(sqlalchemy.Integer)
-# 	artist = sqlalchemu.Column(sqlalchemy.Integer)
+class SC_Track(base):
+    __tablename__ = "sc_tracks"
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    sc_id = sqlalchemy.Column(sqlalchemy.Integer)
+	stream_url = sqlalchemy.Column(sqlalchemy.String)
+
+base = declarative_base()
 
 
 sc_client = soundcloud.Client(client_id = config.auth.sc_client_id)
