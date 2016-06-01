@@ -4,11 +4,63 @@
 	<head >
 		<meta charset="utf-8" />
 		<title >floom</title>
+		<script >if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+		<script src="js/jquery.min.js" ></script>
+		<script>if (window.module) module = window.module;</script>
 	</head>
 	<body >
-		<h1 >tet</h1>
-		<script >document.write(process.versions.node);</script>
-		<script >document.write(process.versions.chrome);</script>
-		<script >document.write(process.versions.electron);</script>
+		<input id="search_field" type="text" placeholder="search" />
+		<button id="search_btn">search</button>
+		<table id="search_results">
+			<tr >
+				<td >
+					--
+				</td>
+				<td >
+					title
+				</td>
+				<td >
+					artist
+				</td>
+			</tr>
+		</table>
+		<script >
+
+			//var player = require("player");
+
+			$("#search_btn").click(function() {
+				$.post({
+					url: "http://localhost:8080/search",
+					data: {
+						"q": $("#search_field").val()
+					},
+					success: function(data) {
+						if (data["status"] == 200) {
+							console.log(data);
+							for (var i = 0; i < data["payload"]["tracks"].length; i++) {
+								$("#search_results tr:last").after("<tr > \
+									<td class=\"play_btn\" stream-url=" + data["payload"]["tracks"][i]["stream_url"] + " >\
+										 >\
+									</td>\
+									<td >\
+										" + data["payload"]["tracks"][i]["title"] + "\
+									</td>\
+									<td >\
+										" + data["payload"]["tracks"][i]["artist"] + "\
+									</td>\
+								</tr>");
+							}
+						}
+					},
+					error: function(error) {
+						console.log(error);
+					}
+				});
+			});
+			$(".play_btn").click(function() {
+				var stream_url = $(this).attr("stream-url");
+
+			});
+		</script>
 	</body>
 </html >
